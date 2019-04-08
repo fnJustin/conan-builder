@@ -27,14 +27,14 @@ pipeline {
             //get dependencies
             steps{
                 sh 'mkdir build'
-                sh 'conan install . --install-folder=./build --profile=${PROFILE}}'
+                sh 'conan install . --install-folder=./build --profile=${PROFILE}'
             }
         }
 
         stage('Conan Build') {
             steps{
                 //build it
-                sh 'conan build . --build-folder=./build --profile=${PROFILE}}'
+                sh 'conan build . --build-folder=./build'
             }
         }
 
