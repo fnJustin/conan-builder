@@ -19,7 +19,7 @@ pipeline {
             steps{
                 //clean out old build
                 sh 'echo ${NODELABEL}'
-                echo 'PATH is: $PATH'
+                sh 'echo PATH is: $PATH'
                 sh 'rm -rf *'
                 git '${REPO}'
             }
