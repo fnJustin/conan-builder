@@ -9,32 +9,34 @@ pipeline {
 
     agent {node { label '${NODELABEL}' } }
     
+    environment{
+        PATH = "PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin"
+    }
 
     stages{
-        withEnv(["PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin"]) {
-            stage("SCM ${NODELABEL}") { 
-                //clean out old build
-                sh "rm -rf *"
-                git "${REPO}"
-            }
-            stage ("Conan install ${NODELABEL}"){
-                //get dependencies
-                sh "mkdir build"
-                sh "conan install . --install-folder=./build --profile=${PROFILE}}"
-            }
-  
-            stage("Conan Build ${NODELABEL}") {
-                //build it
-                sh "conan build . --build-folder=./build --profile=${PROFILE}}"
-            }
-   
-            stage("UnitTests ${NODELABEL}") {
-                //test it
-                sh "cd build && ./tests --gtest_output=xml:tests.xml"
-                junit '**/build/tests.xml'
-                sh "cd build && gcov ../src/*.cpp --object-directory CMakeFiles/tests.dir/"
-                sh "gcovr -r . -x --object-directory=build >coverage.xml"
-            }
+       
+        stage("SCM ${NODELABEL}") { 
+            //clean out old build
+            sh "rm -rf *"
+            git "${REPO}"
+        }
+        stage ("Conan install ${NODELABEL}"){
+            //get dependencies
+            sh "mkdir build"
+            sh "conan install . --install-folder=./build --profile=${PROFILE}}"
+        }
+
+        stage("Conan Build ${NODELABEL}") {
+            //build it
+            sh "conan build . --build-folder=./build --profile=${PROFILE}}"
+        }
+
+        stage("UnitTests ${NODELABEL}") {
+            //test it
+            sh "cd build && ./tests --gtest_output=xml:tests.xml"
+            junit '**/build/tests.xml'
+            sh "cd build && gcov ../src/*.cpp --object-directory CMakeFiles/tests.dir/"
+            sh "gcovr -r . -x --object-directory=build >coverage.xml"
         }
     }
 }
