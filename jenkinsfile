@@ -9,8 +9,8 @@ pipeline {
 
     agent any
     
-    environment{
-        PATH = "PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin"
+    environment {
+        PATH = 'PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin'
     }
 
     stages{
@@ -19,6 +19,7 @@ pipeline {
             steps{
                 //clean out old build
                 sh 'echo ${NODELABEL}'
+                echo 'PATH is: $PATH'
                 sh 'rm -rf *'
                 git '${REPO}'
             }
