@@ -15,35 +15,35 @@ pipeline {
 
     stages{
        
-        stage('SCM ${NODELABEL}') { 
+        stage("SCM ${NODELABEL}") { 
             steps{
                 //clean out old build
-                sh 'rm -rf *'
-                git '${REPO}'
+                sh "rm -rf *"
+                git "${REPO}"
             }
         }
-        stage ('Conan install ${NODELABEL}'){
+        stage ("Conan install ${NODELABEL}"){
             //get dependencies
             steps{
-                sh 'mkdir build'
-                sh 'conan install . --install-folder=./build --profile=${PROFILE}}'
+                sh "mkdir build"
+                sh "conan install . --install-folder=./build --profile=${PROFILE}}"
             }
         }
 
-        stage('Conan Build ${NODELABEL}') {
+        stage("Conan Build ${NODELABEL}") {
             steps{
                 //build it
-                sh 'conan build . --build-folder=./build --profile=${PROFILE}}'
+                sh "conan build . --build-folder=./build --profile=${PROFILE}}"
             }
         }
 
-        stage('UnitTests ${NODELABEL}') {
+        stage("UnitTests ${NODELABEL}") {
             steps{
                 //test it
-                sh 'cd build && ./tests --gtest_output=xml:tests.xml'
-                junit '**/build/tests.xml'
-                sh 'cd build && gcov ../src/*.cpp --object-directory CMakeFiles/tests.dir/'
-                sh 'gcovr -r . -x --object-directory=build >coverage.xml'
+                sh "cd build && ./tests --gtest_output=xml:tests.xml"
+                junit "**/build/tests.xml"
+                sh "cd build && gcov ../src/*.cpp --object-directory CMakeFiles/tests.dir/"
+                sh "gcovr -r . -x --object-directory=build >coverage.xml"
             }
         }
     }
