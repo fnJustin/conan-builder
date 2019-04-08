@@ -21,12 +21,13 @@ pipeline {
                 sh 'echo ${NODELABEL}'
                 sh 'echo PATH is: $PATH'
                 sh 'rm -rf *'
-                git '${REPO}'
+                sh 'git clone ${REPO}'
             }
         }
         stage ('Conan install'){
             //get dependencies
             steps{
+                sh 'ls'
                 sh 'mkdir build'
                 sh 'conan install . --install-folder=./build --profile=${PROFILE}'
             }
