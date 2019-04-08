@@ -1,4 +1,5 @@
 pipeline {
+    
     parameters {
         string(defaultValue: "https://github.com/fnJustin/gtest.git", description: 'git repo to pull', name: 'REPO')
         string(defaultValue: "osx", description: 'node label that is valid for', name: 'NODELABEL')
@@ -6,7 +7,10 @@ pipeline {
         
     }
 
-    node("${NODELABEL}"){
+    agent {node { label '${NODELABEL}' } }
+    
+
+    stages{
         withEnv(["PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin"]) {
             stage("SCM ${NODELABEL}") { 
                 //clean out old build
