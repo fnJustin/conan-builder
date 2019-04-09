@@ -7,6 +7,7 @@ properties([
         string(defaultValue: "osx", description: 'node label that is valid for', name: 'NODELABEL'),
         string(defaultValue: "vfx18_mac_Release", description: 'profile', name: 'PROFILE'),
         string(defaultValue: "./src", description: 'conan py file location in repo', name: 'CONAN_PY_LOC'),
+        string(defaultValue: "--build=missing", description: 'pass in another option to the build --build=missing etc', name: 'CONAN_BUILD_OPTIONS'),
         ]
     )
 ])
@@ -27,7 +28,7 @@ node("${NODELABEL}"){
         }
 
         stage("Conan Build ${NODELABEL}") {
-            sh "conan build ${CONAN_PY_LOC} --build-folder=./build"
+            sh "conan build ${CONAN_PY_LOC} --build-folder=./build ${CONAN_BUILD_OPTIONS}"
         }
 
         stage("UnitTests ${NODELABEL}") {
