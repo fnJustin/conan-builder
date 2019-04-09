@@ -9,20 +9,14 @@ node("${NODELABEL}"){
             git "${REPO}"
         }
 
-        stage ("Conan ${NODELABEL}"){
+        stage ("Conan install ${NODELABEL}"){
             //get dependencies
             sh "mkdir build"
-            if (fileExists('./src/conanfile.txt')) {
-                sh "cd build && conan install ../src"
-            }
+            sh "conan install . --install-folder=./build --profile=${PROFILE}"
         }
 
-        stage("CMake ${NODELABEL}") {
-            sh "cd build && cmake ../src"
-        }
-
-        stage("Build ${NODELABEL}") {
-            sh "cd build && make"
+        stage("Conan Build ${NODELABEL}") {
+            sh "conan build . --build-folder=./build"
         }
 
         stage("UnitTests ${NODELABEL}") {
