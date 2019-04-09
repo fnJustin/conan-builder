@@ -4,6 +4,7 @@ properties([
     parameters(
         [
         string(defaultValue: "https://github.com/fnJustin/gtest.git", description: 'git repo to pull', name: 'REPO'),
+        choice(choices: ['git', 'perforce'], description: 'Repo type', name: 'REPOTYPE'),
         string(defaultValue: "osx", description: 'node label that is valid for', name: 'NODELABEL'),
         string(defaultValue: "vfx18_mac_Release", description: 'profile', name: 'PROFILE'),
         string(defaultValue: "./src", description: 'conan py file location in repo', name: 'CONAN_PY_LOC'),
@@ -12,37 +13,87 @@ properties([
     )
 ])
 
-node("${NODELABEL}"){
-    withEnv(["PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin"]) {
 
-        stage("SCM ${NODELABEL}") {
-            //clean out old build
-            sh "rm -rf *"
-            git "${REPO}"
-        }
+//helper for checking out from perforce.
+def perforce(repo){
+}
 
-        stage ("Conan install ${NODELABEL}"){
-            //get dependencies
-            sh "mkdir build"
-            sh "conan install ${CONAN_PY_LOC} --install-folder=./build --profile=${PROFILE} ${CONAN_INSTALL_OPTIONS}"
-        }
+//function to send build status notifications
+def notifyBuild(String buildStatus = 'STARTED') {
+    // build status of null means successful
+    buildStatus =  buildStatus ?: 'SUCCESSFUL'
+    // Default values
+    def colorName = 'RED'
+    def colorCode = '#FF0000'
+    def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+    def summary = "${subject} (${env.BUILD_URL})"
 
-        stage("Conan Build ${NODELABEL}") {
-            sh "conan build ${CONAN_PY_LOC} --build-folder=./build"
-        }
+    // Override default values based on build status
+    if (buildStatus == 'STARTED') {
+        color = 'YELLOW'
+        colorCode = '#FFFF00'
+    } else if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+        colorCode = '#00FF00'
+        summary = ":jenkins-success: :jenkins-party:" + summary
+    } else {
+        color = 'RED'
+        colorCode = '#FF0000'
+        summary = ":jenkins-failed: :slam:" +summary
+    }
 
-        stage("UnitTests ${NODELABEL}") {
-            sh "cd build && ./tests --gtest_output=xml:tests.xml"
-            junit '**/build/tests.xml'
-            sh "cd build && gcov ../src/*.cpp --object-directory CMakeFiles/tests.dir/"
-            sh "gcovr -r . -x --object-directory=build >coverage.xml"
+    // Send notifications
+    slackSend (color: colorCode, message: summary)
+}
 
-        }
+//the pipeline job
+try{
+    node("${NODELABEL}"){
+        withEnv(["PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin"]) {
 
-        stage("Analysis ${NODELABEL}") {
-            sh "cppcheck --xml --xml-version=2 --enable=all 2>cppcheck.xml ./src"
-        }
+            stage("SCM ${NODELABEL}") {
+                //clean out old build
+                sh "rm -rf *"
 
-    }//env
+                //check if this is git, perforce or svn .. etc?
+                switch("${REPOTYPE}"){
+                    case "perforce":
+                        perforce( "${REPO}" )
+                    break
+                    default:
+                        git "${REPO}"
+                    break
 
-}//node
+                }
+            }
+
+            stage ("Conan install ${NODELABEL}"){
+                //get dependencies
+                sh "mkdir build"
+                sh "conan install ${CONAN_PY_LOC} --install-folder=./build --profile=${PROFILE} ${CONAN_INSTALL_OPTIONS}"
+            }
+
+            stage("Conan Build ${NODELABEL}") {
+                sh "conan build ${CONAN_PY_LOC} --build-folder=./build"
+            }
+
+            stage("UnitTests ${NODELABEL}") {
+                sh "cd build && ./tests --gtest_output=xml:tests.xml"
+                junit '**/build/tests.xml'
+                sh "cd build && gcov ../src/*.cpp --object-directory CMakeFiles/tests.dir/"
+                sh "gcovr -r . -x --object-directory=build >coverage.xml"
+            }
+
+            stage("Analysis ${NODELABEL}") {
+                sh "cppcheck --xml --xml-version=2 --enable=all 2>cppcheck.xml ./src"
+            }
+
+        }//env
+
+    }//node
+} catch(e) {
+    echo 'Something failed, I should sound the klaxons!'
+    throw e
+} finally {
+    notifyBuild (currentBuild.result)
+}
