@@ -1,53 +1,42 @@
-pipeline {
-    
-    parameters {
-        string(defaultValue: "https://github.com/fnJustin/gtest.git", description: 'git repo to pull', name: 'REPO')
-        string(defaultValue: "osx", description: 'node label that is valid for', name: 'NODELABEL')
-        string(defaultValue: "vfx18_mac_Release", description: 'profile', name: 'PROFILE')
-        
-    }
+#!/usr/bin/env groovy
 
-    agent any
-    
-    environment {
-        PATH = 'PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin'
-    }
+node("${NODELABEL}"){
+    withEnv(["PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin"]) {
 
-    stages{
-       
-        stage('SCM') { 
-            steps{
-                //clean out old build
-                sh 'echo ${NODELABEL}'
-                sh 'echo PATH is: $PATH'
-                sh 'rm -rf *'
-                sh 'git clone ${REPO}'
-            }
+        stage("SCM ${NODELABEL}") {
+            //clean out old build
+            sh "rm -rf *"
+            git "${REPO}"
         }
-        stage ('Conan install'){
+
+        stage ("Conan ${NODELABEL}"){
             //get dependencies
-            steps{
-                sh 'ls'
-                sh 'mkdir build'
-                sh 'conan install . --install-folder=./build --profile=${PROFILE}'
+            sh "mkdir build"
+            if (fileExists('./src/conanfile.txt')) {
+                sh "cd build && conan install ../src"
             }
         }
 
-        stage('Conan Build') {
-            steps{
-                //build it
-                sh 'conan build . --build-folder=./build'
-            }
+        stage("CMake ${NODELABEL}") {
+            sh "cd build && cmake ../src"
         }
 
-        stage('UnitTests') {
-            steps{
-                //test it
-                sh 'cd build && ./tests --gtest_output=xml:tests.xml'
-                junit '**/build/tests.xml'
-                sh 'cd build && gcov ../src/*.cpp --object-directory CMakeFiles/tests.dir/'
-                sh 'gcovr -r . -x --object-directory=build >coverage.xml'
-            }
+        stage("Build ${NODELABEL}") {
+            sh "cd build && make"
         }
-    }
-}
+
+        stage("UnitTests ${NODELABEL}") {
+            sh "cd build && ./tests --gtest_output=xml:tests.xml"
+            junit '**/build/tests.xml'
+            sh "cd build && gcov ../src/*.cpp --object-directory CMakeFiles/tests.dir/"
+            sh "gcovr -r . -x --object-directory=build >coverage.xml"
+
+        }
+
+        stage("Analysis ${NODELABEL}") {
+            sh "cppcheck --xml --xml-version=2 --enable=all 2>cppcheck.xml ./src"
+        }
+
+    }//env
+
+}//node
