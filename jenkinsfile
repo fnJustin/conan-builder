@@ -12,11 +12,11 @@ node("${NODELABEL}"){
         stage ("Conan install ${NODELABEL}"){
             //get dependencies
             sh "mkdir build"
-            sh "conan install . --install-folder=./build --profile=${PROFILE}"
+            sh "conan install ${CONAN_PY_LOC} --install-folder=./build --profile=${PROFILE}"
         }
 
         stage("Conan Build ${NODELABEL}") {
-            sh "conan build . --build-folder=./build"
+            sh "conan build ${CONAN_PY_LOC} --build-folder=./build"
         }
 
         stage("UnitTests ${NODELABEL}") {
