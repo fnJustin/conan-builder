@@ -1,5 +1,17 @@
 #!/usr/bin/env groovy
 
+def paramsList = [
+string(defaultValue: "https://github.com/fnJustin/gtest.git", description: 'git repo to pull', name: 'REPO')
+string(defaultValue: "osx", description: 'node label that is valid for', name: 'NODELABEL')
+string(defaultValue: "vfx18_mac_Release", description: 'profile', name: 'PROFILE')
+string(defaultValue: "./src", description: 'conan py file location in repo', name: 'CONAN_PY_LOC')
+]
+
+
+properties([
+parameters(paramList)
+])
+
 node("${NODELABEL}"){
     withEnv(["PATH=/usr/local/bin/:$PATH:/Applications/CMake.app/Contents/bin"]) {
 
